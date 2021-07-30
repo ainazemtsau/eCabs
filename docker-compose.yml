@@ -1,0 +1,26 @@
+version: '3'
+services:
+  rabbitmq:
+    image: rabbitmq:management
+    expose:
+      - "5672:5672"
+      - "15672:15672"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+  consumer:
+    build: ./consumer
+    ports:
+      - 8080:8080
+    depends_on:
+      - rabbitmq
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+  producer:
+    build: ./producer
+    ports:
+      - 8081:8081
+    depends_on:
+      - rabbitmq
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
