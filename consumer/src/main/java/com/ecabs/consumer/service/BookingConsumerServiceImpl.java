@@ -7,12 +7,12 @@ import com.ecabs.common.model.BookingResult;
 import com.ecabs.common.model.TripWaypoint;
 import com.ecabs.consumer.repository.BookingRepository;
 import com.ecabs.consumer.repository.TripWaypointRepository;
-import javassist.NotFoundException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -64,9 +64,11 @@ public class BookingConsumerServiceImpl implements BookingConsumerService {
     }
 
     private BookingResult getBookingResult(Booking booking, BookingEventName eventName) {
-        List<TripWaypoint> checkedTripWaypointList;
+        List<TripWaypoint> checkedTripWaypointList = Collections.emptyList();
         try {
-            checkedTripWaypointList = getCheckedTripWaypointList(booking);
+            if (booking.getTripWaypointList() != null && !booking.getTripWaypointList().isEmpty()) {
+                checkedTripWaypointList = getCheckedTripWaypointList(booking);
+            }
         } catch (RuntimeException exception) {
             return BookingResult.builder().failedMessage(exception.getMessage())
                     .eventName(eventName).status(BookingEventStatus.FAILED).build();
@@ -82,6 +84,8 @@ public class BookingConsumerServiceImpl implements BookingConsumerService {
                 point.setId(UUID.randomUUID().toString());
             } else if (!tripWaypointRepository.existsById(point.getId())) {
                 throw new RuntimeException("Trip waypoint not found with such id");
+            } else {
+                return point;
             }
             return tripWaypointRepository.save(point);
         }).collect(Collectors.toList());
